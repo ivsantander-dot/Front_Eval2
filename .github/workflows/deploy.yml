@@ -2,25 +2,22 @@ name: Deploy Frontend
 
 on:
   push:
-    branches: [ deploy ]      # se activa solo cuando haces push a la rama deploy
+    branches: [ deploy ]
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Descarga el código del repo
       - name: Checkout código
         uses: actions/checkout@v4
 
-      # 2. Inicia sesión en Docker Hub con los secrets
       - name: Login a Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # 3. Construye la imagen y la sube a Docker Hub
       - name: Build y push imagen
         uses: docker/build-push-action@v5
         with:
@@ -28,7 +25,6 @@ jobs:
           push: true
           tags: ivsantander/frontend:latest
 
-      # 4. Se conecta a la EC2 y actualiza el contenedor
       - name: Deploy en EC2
         uses: appleboy/ssh-action@v1
         with:
@@ -39,8 +35,4 @@ jobs:
             docker pull ivsantander/frontend:latest
             docker stop frontend || true
             docker rm frontend || true
-            docker run -d \
-              --name frontend \
-              -p 5000:5000 \
-              -e DEBUG=False \
-              -e SECRET_KEY=clave_secreta_123 \
+            docker run -d --name frontend -p 5000:5000 -e DEBUG=False -e SECRET_KEY=clave_secreta_123 ivsantander/frontend:latest

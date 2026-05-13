@@ -1,32 +1,26 @@
-# ── ETAPA 1: Builder ───────────────────────────────────────────
-FROM node:18-alpine AS builder
-
+# instalar dependencias 
+FROM python:3.11-slim AS builder
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm ci
+COPY requirements.txt .
+RUN pip install --no-cache-dir --user -r requirements.txt
 
+# imagen final liviana
+FROM python:3.11-slim AS runtime
+WORKDIR /app
+
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+
+COPY --from=builder /root/.local /home/appuser/.local
 COPY . .
 
-# Variable de entorno para la URL del backend
-ARG VITE_API_URL=http://localhost:3000
-ENV VITE_API_URL=$VITE_API_URL
+RUN chown -R appuser:appgroup /app
+USER appuser
 
-# Compilar la aplicación (genera la carpeta dist/)
-RUN npm run build
+ENV PATH=/home/appuser/.local/bin:$PATH
+ENV PORT=5000
+ENV DEBUG=False
 
-# ── ETAPA 2: Runner con Nginx ──────────────────────────────────
-FROM nginx:alpine AS runner
+EXPOSE 5000
 
-# Eliminar configuración por defecto de Nginx
-RUN rm -rf /usr/share/nginx/html/*
-
-# Copiar los archivos estáticos compilados
-COPY --from=builder /app/dist /usr/share/nginx/html
-
-# Configuración personalizada de Nginx (proxy al backend)
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-
-EXPOSE 80
-
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["python", "app.py"]

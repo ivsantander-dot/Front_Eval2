@@ -35,4 +35,4 @@ jobs:
             docker pull ivsantander/frontend:latest
             docker stop frontend || true
             docker rm frontend || true
-            docker run -d --name frontend -p 5000:5000 -e DEBUG=False -e SECRET_KEY=clave_secreta_123 ivsantander/frontend:latest
+            docker run -d --name frontend -p 5000:5000 -e DEBUG=False -e SECRET_KEY=clave_secreta_123 -e BACKEND_URL=http://ip-10-0-128-169.ec2.internal:3000 ivsantander/frontend:latest
